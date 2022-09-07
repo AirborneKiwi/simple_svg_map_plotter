@@ -40,12 +40,19 @@ Arguments:
 #!/usr/bin/python
 import sys
 import getopt
+import os
 
 import pandas as pd
 import numpy as np
 import regex as re
 from bs4 import BeautifulSoup
 import seaborn as sns
+
+# Some libraries to render the svg to PDF and afterwards to PNG
+from svglib.svglib import svg2rlg
+from reportlab.graphics import renderPDF
+from pdf2image import convert_from_path
+
 
 def modify_svg_map(svg_filename: str, df: pd.DataFrame, colorbar_title: str, cmap: str = 'RdYlGn', reverse: bool = False, suffix:str ='') -> None:
     with open(svg_filename, 'r') as f:
@@ -120,15 +127,29 @@ def modify_svg_map(svg_filename: str, df: pd.DataFrame, colorbar_title: str, cma
             new_style = f'{result.group(1)}{new_fill_color}{result.group(2)}'
             path['style'] = new_style
 
-        # Save the modified svg file
-        new_svg_filename = svg_filename[:svg_filename.rfind('.')] + suffix
+        # Create the output folder, if it does not exist
+        try:
+            os.mkdir('output')
+        except FileExistsError:
+            pass
 
-        print(f'Saving row {index} to {new_svg_filename}.{index}.svg')
-        with open(f'{new_svg_filename}.{index}.svg', 'w') as f:
+        # Save the modified svg file
+        new_svg_filename = 'output/' + svg_filename[:svg_filename.rfind('.')] + suffix + f'.{index}'
+
+        print(f'Saving row {index} to {new_svg_filename}.svg')
+        with open(f'{new_svg_filename}.svg', 'w') as f:
             s = Bs_data.prettify()
             # remove the added whitespaces within the text elements
             s = re.sub(r'(<svg:text .*)[\n\r]\s*(.*)[\n\r]\s*(<\/svg:text>)', '\\1\\2\\3', s)
             f.write(s)
+
+        drawing = svg2rlg(f'{new_svg_filename}.svg')
+        print(f'Converting to PDF format')
+        renderPDF.drawToFile(drawing, f'{new_svg_filename}.pdf')
+
+        print(f'Rendering to PNG format')
+        pages = convert_from_path(f'{new_svg_filename}.pdf', 600)
+        pages[0].save(f'{new_svg_filename}.png', 'PNG')
 
 
 def main(argv):
@@ -157,7 +178,7 @@ def main(argv):
         elif opt in ("--cmap"):
             cmap = arg
         elif opt in ("--reverse"):
-            reverse = arg
+            reverse = True
 
     print(f'The svg-file is {svg_filename}')
     print(f'The data file is {data_filename}')

@@ -2,3 +2,5 @@ regex
 lxml
 beautifulsoup4
 seaborn
+svglib
+pdf2image
