@@ -8,6 +8,7 @@ The chosen colorbar is then simply made visible within the svg-file. Therefore, 
 Each row in the data will be saved to a separate modified svg-file.
 
 Arguments:
+    
     -h
         Display this help message^^
 
